@@ -1,7 +1,8 @@
 // servidor-express-completo.js
 const express = require('express');
-const { validarCreacionTarea, validarActualizacionTarea, validarActualizacionParcialTarea } = require('./validador-tareas.js');
-const log = require('./logger.js');
+const { validarCreacionTarea, validarActualizacionTarea, validarActualizacionParcialTarea } = require('./middlewares/validador-tareas.js');
+const { manejoErrores, manejo404 } = require('./middlewares/utils-mdw.js');
+const log = require('./middlewares/logger.js');
 
 const { exportarTareasCSV } = require('./exportador-csv.js');
 
@@ -34,6 +35,13 @@ app.use((req, res, next) => {
     });
     next();
 });
+
+
+// Middleware de manejo de errores
+app.use((error, req, res, next) => manejoErrores(error, req, res, next));
+
+// Middleware 404
+app.use((req, res) => manejo404(req, res)); 
 
 // Base de datos simulada
 let tareas = [
@@ -216,33 +224,7 @@ app.get('/export/csv', (req, res) => {
   res.status(200).send(csvData);
 });
 
-// Middleware de manejo de errores
-app.use((error, req, res, next) => {
-  console.error('Error:', error);
 
-  if (error.type === 'entity.parse.failed') {
-    return res.status(400).json({ error: 'JSON inválido' });
-  }
-
-  res.status(500).json({
-    error: 'Error interno del servidor',
-    mensaje: process.env.NODE_ENV === 'development' ? error.message : 'Algo salió mal'
-  });
-});
-
-// Middleware 404
-app.use((req, res) => {
-  res.status(404).json({
-    error: 'Ruta no encontrada',
-    metodo: req.method,
-    ruta: req.url,
-    sugerencias: [
-      'GET / - Información de la API',
-      'GET /tareas - Listar tareas',
-      'POST /tareas - Crear tarea'
-    ]
-  });
-});
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
