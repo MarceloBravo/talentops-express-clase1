@@ -4,10 +4,20 @@
   "description": "",
   "main": "servidor-express.js",
   "scripts": {
+    "start": "node servidor-express.js",
+    "dev": "nodemon servidor-express.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "dependencies": {
+    "express": "^5.1.0",
+    "joi": "^18.0.2"
+  },
+  "devDependencies": {
+    "nodemo": "^1.0.0",
+    "nodemon": "^3.1.11"
+  }
 }

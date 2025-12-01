@@ -1,5 +1,6 @@
 // servidor-express-completo.js
 const express = require('express');
+const { validarCreacionTarea, validarActualizacionTarea, validarActualizacionParcialTarea } = require('./validador-tareas.js');
 
 // Crear aplicación Express
 const app = express();
@@ -21,24 +22,6 @@ function encontrarTarea(id) {
   return tareas.find(t => t.id === parseInt(id));
 }
 
-function validarTarea(datos) {
-  const errores = [];
-
-  if (!datos.titulo || typeof datos.titulo !== 'string') {
-    errores.push('El título es requerido y debe ser texto');
-  }
-
-  if (datos.titulo && datos.titulo.length < 3) {
-    errores.push('El título debe tener al menos 3 caracteres');
-  }
-
-  if (datos.descripcion && typeof datos.descripcion !== 'string') {
-    errores.push('La descripción debe ser texto');
-  }
-
-  return errores;
-}
-
 // Rutas de la API
 
 // GET / - Información de la API
@@ -49,6 +32,7 @@ app.get('/', (req, res) => {
     endpoints: {
       'GET /': 'Esta información',
       'GET /tareas': 'Listar tareas',
+      'GET /tareas/contar': 'Listar tareas',
       'GET /tareas/:id': 'Obtener tarea específica',
       'POST /tareas': 'Crear nueva tarea',
       'PUT /tareas/:id': 'Actualizar tarea completa',
@@ -62,6 +46,21 @@ app.get('/', (req, res) => {
     }
   });
 });
+
+app.get('/tareas/contar', (req, res) => {
+  let resultados = [...tareas];
+  const { completada, q } = req.query;
+  
+  // Filtrar por estado
+  const total = (completada !== undefined && (completada === "true" || completada === "false")) ? resultados.filter(t => `${t.completada}` == completada) : resultados;
+  res.json({
+    total: total.length,
+    tareas: total,
+    filtros: req.query,
+  });
+});
+
+
 
 // GET /tareas - Listar todas las tareas
 app.get('/tareas', (req, res) => {
@@ -110,16 +109,7 @@ app.get('/tareas/:id', (req, res) => {
 });
 
 // POST /tareas - Crear nueva tarea
-app.post('/tareas', (req, res) => {
-  const errores = validarTarea(req.body);
-
-  if (errores.length > 0) {
-    return res.status(400).json({
-      error: 'Datos inválidos',
-      detalles: errores
-    });
-  }
-
+app.post('/tareas', validarCreacionTarea, (req, res) => {
   const nuevaTarea = {
     id: siguienteId++,
     titulo: req.body.titulo,
@@ -137,26 +127,17 @@ app.post('/tareas', (req, res) => {
 });
 
 // PUT /tareas/:id - Actualizar tarea completa
-app.put('/tareas/:id', (req, res) => {
+app.put('/tareas/:id', validarActualizacionTarea, (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
     return res.status(404).json({ error: 'Tarea no encontrada' });
   }
 
-  const errores = validarTarea(req.body);
-
-  if (errores.length > 0) {
-    return res.status(400).json({
-      error: 'Datos inválidos',
-      detalles: errores
-    });
-  }
-
   // Actualización completa
   tarea.titulo = req.body.titulo;
   tarea.descripcion = req.body.descripcion || '';
-  tarea.completada = req.body.completada || false;
+  tarea.completada = req.body.completada;
   tarea.fechaActualizacion = new Date().toISOString();
 
   res.json({
@@ -166,35 +147,15 @@ app.put('/tareas/:id', (req, res) => {
 });
 
 // PATCH /tareas/:id - Actualizar tarea parcial
-app.patch('/tareas/:id', (req, res) => {
+app.patch('/tareas/:id', validarActualizacionParcialTarea, (req, res) => {
   const tarea = encontrarTarea(req.params.id);
 
   if (!tarea) {
     return res.status(404).json({ error: 'Tarea no encontrada' });
   }
 
-  // Validación parcial (solo campos proporcionados)
-  if (req.body.titulo !== undefined) {
-    if (typeof req.body.titulo !== 'string' || req.body.titulo.length < 3) {
-      return res.status(400).json({ error: 'Título inválido' });
-    }
-    tarea.titulo = req.body.titulo;
-  }
-
-  if (req.body.descripcion !== undefined) {
-    if (req.body.descripcion !== null && typeof req.body.descripcion !== 'string') {
-      return res.status(400).json({ error: 'Descripción inválida' });
-    }
-    tarea.descripcion = req.body.descripcion || '';
-  }
-
-  if (req.body.completada !== undefined) {
-    if (typeof req.body.completada !== 'boolean') {
-      return res.status(400).json({ error: 'Estado de completada debe ser boolean' });
-    }
-    tarea.completada = req.body.completada;
-  }
-
+  // Asigna solo los campos que vienen en el body
+  Object.assign(tarea, req.body);
   tarea.fechaActualizacion = new Date().toISOString();
 
   res.json({
