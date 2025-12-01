@@ -3,6 +3,8 @@ const express = require('express');
 const { validarCreacionTarea, validarActualizacionTarea, validarActualizacionParcialTarea } = require('./validador-tareas.js');
 const log = require('./logger.js');
 
+const { exportarTareasCSV } = require('./exportador-csv.js');
+
 // Crear aplicación Express
 const app = express();
 
@@ -203,6 +205,15 @@ app.delete('/tareas/:id', (req, res) => {
     mensaje: 'Tarea eliminada exitosamente',
     tarea: tareaEliminada
   });
+});
+
+// GET /export/csv - Exportar tareas a CSV
+app.get('/export/csv', (req, res) => {
+  const csvData = exportarTareasCSV(tareas);
+
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="tareas.csv"');
+  res.status(200).send(csvData);
 });
 
 // Middleware de manejo de errores
