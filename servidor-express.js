@@ -1,12 +1,37 @@
 // servidor-express-completo.js
 const express = require('express');
 const { validarCreacionTarea, validarActualizacionTarea, validarActualizacionParcialTarea } = require('./validador-tareas.js');
+const log = require('./logger.js');
 
 // Crear aplicación Express
 const app = express();
 
 // Middleware para parsing JSON
 app.use(express.json());
+
+// Middleware de Logging
+app.use((req, res, next) => {
+    res.on('finish', () => {
+        log({
+            level: res.statusCode >= 400 ? 'error' : 'info',
+            message: `Petición a ${req.originalUrl}`,
+            meta: {
+                req: {
+                    method: req.method,
+                    url: req.originalUrl,
+                    ip: req.ip,
+                    userAgent: req.get('user-agent'),
+                    body: req.body,
+                },
+                res: {
+                    statusCode: res.statusCode,
+                    statusMessage: res.statusMessage,
+                }
+            }
+        });
+    });
+    next();
+});
 
 // Base de datos simulada
 let tareas = [
