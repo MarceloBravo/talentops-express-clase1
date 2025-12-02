@@ -68,6 +68,7 @@ app.get('/', (req, res) => {
       'GET /': 'Esta información',
       'GET /tareas': 'Listar tareas',
       'GET /tareas/contar': 'Listar tareas',
+      'GET /export/csv': 'Exportar tareas a CSV',
       'GET /tareas/:id': 'Obtener tarea específica',
       'POST /tareas': 'Crear nueva tarea',
       'PUT /tareas/:id': 'Actualizar tarea completa',
@@ -77,7 +78,9 @@ app.get('/', (req, res) => {
     ejemplos: {
       crear: 'POST /tareas con body: {"titulo": "Mi tarea", "descripcion": "Descripción"}',
       filtrar: 'GET /tareas?completada=false',
-      buscar: 'GET /tareas?q=express'
+      buscar: 'GET /tareas?q=express',
+      contar: 'GET /tareas/contar?completada=true',
+      exportar: 'GET /export/csv',
     }
   });
 });
